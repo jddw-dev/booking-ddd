@@ -20,45 +20,23 @@ export class OrganizerPrismaRepository implements OrganizerRepository {
     try {
       const organizerExists = await this.idExists(organizer.id);
       if (organizerExists) {
-        // Remove emails / phones to recreate them
-        // TODO : find a more optimized way ?
-        const removeExistingEmails = this.prisma.organizerEmail.deleteMany({
-          where: { organizerId: organizer.id },
-        });
-        const removeExistingPhones = this.prisma.organizerPhone.deleteMany({
-          where: { organizerId: organizer.id },
-        });
-
-        const update = this.prisma.organizer.update({
+        await this.prisma.organizer.update({
           where: { id: organizer.id },
           data: {
             ...record,
-            emails: {
-              create: organizer.emails.map((email) => ({ value: email.value })),
-            },
-            phones: {
-              create: organizer.phones.map((phone) => ({ value: phone })),
-            },
             contacts: {
               connect: organizer.contactIds.map((id) => ({ id })),
             },
           },
         });
-
-        await this.prisma.$transaction([
-          removeExistingEmails,
-          removeExistingPhones,
-          update,
-        ]);
       } else {
         await this.prisma.organizer.create({
           data: {
             ...record,
-            emails: {
-              create: organizer.emails.map((email) => ({ value: email.value })),
-            },
-            phones: {
-              create: organizer.phones.map((phone) => ({ value: phone })),
+            contactInfos: {
+              connect: {
+                id: organizer.contactIds.id,
+              },
             },
             contacts: {
               connect: organizer.contactIds.map((id) => ({ id })),

@@ -1,15 +1,33 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ContactInfos } from '@src/domains/contacts/contact-infos/domain/contact-infos.entity';
+import { Email } from '@src/domains/contacts/contact-infos/domain/value-objects/email';
 import {
   Organizer,
+  OrganizerProps,
   OrganizerType,
 } from '@src/domains/contacts/organizer/domain/organizer.entity';
-import { Email } from '@src/domains/contacts/shared/domain/value-objects/email';
 import { EntityID } from '@src/libs/ddd';
 import { randomUUID } from 'crypto';
+import { None } from 'oxide.ts';
 import { OrganizerInMemoryRepository } from '../../organizer.in-memory.repository';
 
 describe('OrganizerInMemoryRepository', () => {
   let repository: OrganizerInMemoryRepository;
+
+  const contactInfos: ContactInfos = ContactInfos.create({
+    emails: [Email.create('john.doe@mail.com').unwrap()],
+    phones: [],
+    website: None,
+    address: None,
+  }).unwrap();
+
+  const organizerProps: OrganizerProps = {
+    bookerId: randomUUID(),
+    name: 'John Doe',
+    type: OrganizerType.OTHER,
+    contactInfos: contactInfos,
+    contactIds: [],
+  };
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -28,15 +46,7 @@ describe('OrganizerInMemoryRepository', () => {
 
     it('should insert a new Organizer', async () => {
       // Arrange
-      const organizer = Organizer.create({
-        bookerId: randomUUID(),
-        name: 'John Doe',
-        type: OrganizerType.OTHER,
-        emails: [Email.create('john.doe@mail.com').unwrap()],
-        phones: ['+33612345678'],
-        contactIds: [],
-      }).unwrap();
-
+      const organizer = Organizer.create(organizerProps).unwrap();
       const organizersCount = repository.organizers.length;
 
       // Act
@@ -48,14 +58,7 @@ describe('OrganizerInMemoryRepository', () => {
 
     it('should update an existing organizer', async () => {
       // Arrange
-      const organizer = Organizer.create({
-        bookerId: randomUUID(),
-        name: 'John Doe',
-        type: OrganizerType.OTHER,
-        emails: [Email.create('john.doe@mail.com').unwrap()],
-        phones: ['+33612345678'],
-        contactIds: [],
-      }).unwrap();
+      const organizer = Organizer.create(organizerProps).unwrap();
       await repository.save(organizer);
       const organizersCount = repository.organizers.length;
 
@@ -72,15 +75,13 @@ describe('OrganizerInMemoryRepository', () => {
     let knownOrganizerId: EntityID;
 
     beforeAll(async () => {
-      const organizer = Organizer.create({
-        bookerId: randomUUID(),
-        name: 'John Doe',
-        type: OrganizerType.OTHER,
-        emails: [Email.create('john.doe@mail.com').unwrap()],
-        phones: ['+33612345678'],
-        contactIds: [],
+      const organizer = Organizer.create(organizerProps).unwrap();
+      const organizer2 = Organizer.create({
+        ...organizerProps,
+        name: 'Jane Doe',
       }).unwrap();
       await repository.save(organizer);
+      await repository.save(organizer2);
 
       knownOrganizerId = organizer.id;
     });
@@ -113,14 +114,7 @@ describe('OrganizerInMemoryRepository', () => {
     let knownBookerId: EntityID;
 
     beforeAll(async () => {
-      const organizer = Organizer.create({
-        bookerId: randomUUID(),
-        name: 'John Doe',
-        type: OrganizerType.OTHER,
-        emails: [Email.create('john.doe@mail.com').unwrap()],
-        phones: ['+33612345678'],
-        contactIds: [],
-      }).unwrap();
+      const organizer = Organizer.create(organizerProps).unwrap();
       await repository.save(organizer);
 
       knownBookerId = organizer.bookerId;

@@ -39,27 +39,44 @@ model Booker {
 
 // Contacts domain
 
+model Email {
+  id String @id @default(uuid())
+  value String
+
+  contactInfos ContactInfos @relation(fields: [contactInfosId], references: [id], onDelete: Cascade)
+  contactInfosId String
+}
+
+model Phone {
+  id String @id @default(uuid())
+  value String
+
+  contactInfos ContactInfos @relation(fields: [contactInfosId], references: [id], onDelete: Cascade)
+  contactInfosId String
+}
+
+model ContactInfos {
+  id String @id @default(uuid())
+
+  emails Email[] 
+  phones Phone[]
+
+  website String?
+  
+  street String?
+  city String?
+  zipCode String?
+  country String?
+
+  organizer Organizer?
+  contact Contact?
+}
+
 enum OrganizerType {
   CITY_HALL
   TOURIST_OFFICE
   ASSOCIATION
   OTHER
-}
-
-model OrganizerEmail {
-  id String @id @default(uuid())
-  value String
-
-  organizer Organizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
-  organizerId String
-}
-
-model OrganizerPhone {
-  id String @id @default(uuid())
-  value String
-
-  organizer Organizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
-  organizerId String
 }
 
 model Organizer {
@@ -70,11 +87,11 @@ model Organizer {
   booker Booker @relation(fields: [bookerId], references: [id], onDelete: Cascade)
   bookerId String
 
+  contactInfos ContactInfos @relation(fields: [contactInfosId], references: [id], onDelete: Cascade)
+  contactInfosId String @unique
+
   name String
   type OrganizerType @default(OTHER)
-
-  emails OrganizerEmail[]
-  phones OrganizerPhone[]
 
   contacts Contact[]
 }
@@ -85,14 +102,13 @@ model Contact {
   updatedAt DateTime @updatedAt
   firstName String?
   lastName String?
-  email String?
-  phone String?
+
+  contactInfos ContactInfos @relation(fields: [contactInfosId], references: [id], onDelete: Cascade)
+  contactInfosId String @unique
 
   booker Booker @relation(fields: [bookerId], references: [id], onDelete: Cascade)
   bookerId String
 
   organizer Organizer? @relation(fields: [organizerId], references: [id], onDelete: Cascade)
   organizerId String?
-
-  @@unique([bookerId, email])
 }

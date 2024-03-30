@@ -1,5 +1,7 @@
-import { Email } from '@src/domains/contacts/shared/domain/value-objects/email';
+import { ContactInfos } from '@src/domains/contacts/contact-infos/domain/contact-infos.entity';
+import { Email } from '@src/domains/contacts/contact-infos/domain/value-objects/email';
 import { randomUUID } from 'crypto';
+import { None } from 'oxide.ts';
 import { OrganizerCreatedEvent } from '../../events/organizer-created.event';
 import {
   Organizer,
@@ -8,12 +10,18 @@ import {
 } from '../../organizer.entity';
 
 describe('Organizer Entity', () => {
+  const contactInfos: ContactInfos = ContactInfos.create({
+    emails: [Email.create('john.doe@mail.com').unwrap()],
+    phones: [],
+    website: None,
+    address: None,
+  }).unwrap();
+
   const organizerProps: OrganizerProps = {
     bookerId: randomUUID(),
     name: 'John Doe',
     type: OrganizerType.OTHER,
-    emails: [Email.create('john.doe@mail.com').unwrap()],
-    phones: ['+33612345678'],
+    contactInfos: contactInfos,
     contactIds: [],
   };
 
@@ -58,8 +66,7 @@ describe('Organizer Entity', () => {
       bookerId: randomUUID(),
       name: '',
       type: OrganizerType.OTHER,
-      emails: [],
-      phones: [],
+      contactInfos,
       contactIds: [],
     };
 
@@ -76,8 +83,7 @@ describe('Organizer Entity', () => {
       bookerId: randomUUID(),
       name: 'a'.repeat(256),
       type: OrganizerType.OTHER,
-      emails: [],
-      phones: [],
+      contactInfos,
       contactIds: [],
     };
 
@@ -86,43 +92,5 @@ describe('Organizer Entity', () => {
 
     // Assert
     expect(result.isErr()).toBe(true);
-  });
-
-  it('should add an email', async () => {
-    // Arrange
-    const organizer = Organizer.create(organizerProps).unwrap();
-    const email = Email.create('john.doe2@mail.com').unwrap();
-
-    // Act
-    organizer.addEmail(email);
-
-    // Assert
-    expect(organizer.props.emails).toHaveLength(2);
-    expect(organizer.props.emails).toContain(email);
-  });
-
-  it('should not add an email if it already exists', async () => {
-    // Arrange
-    const organizer = Organizer.create(organizerProps).unwrap();
-    const email = Email.create('john.doe@mail.com').unwrap();
-    const email2 = Email.create('john.doe2@mail.com').unwrap();
-
-    // Act
-    organizer.addEmail(email);
-    organizer.addEmail(email2);
-
-    // Assert
-    expect(organizer.props.emails).toHaveLength(2);
-  });
-
-  it('should not add a phone if it already exists', async () => {
-    // Arrange
-    const organizer = Organizer.create(organizerProps).unwrap();
-
-    // Act
-    organizer.addPhone('+33612345678');
-
-    // Assert
-    expect(organizer.props.phones).toHaveLength(1);
   });
 });

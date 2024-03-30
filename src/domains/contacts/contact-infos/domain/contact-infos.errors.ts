@@ -31,7 +31,7 @@ export class ContactInfosError extends ExceptionBase {
   static readonly message: string = 'Invalid contact infos';
   public readonly code: string = 'CONTACT_INFOS.INVALID';
 
-  constructor(cause?: unknown) {
-    super(ContactInfosError.message, cause);
+  constructor(message?: string, cause?: unknown) {
+    super(message || ContactInfosError.message, cause);
   }
 }

@@ -1,14 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ContactInfos } from '@src/domains/contacts/contact-infos/domain/contact-infos.entity';
+import { Email } from '@src/domains/contacts/contact-infos/domain/value-objects/email';
 import {
   Organizer,
+  OrganizerProps,
   OrganizerType,
 } from '@src/domains/contacts/organizer/domain/organizer.entity';
 import { OrganizerMapper } from '@src/domains/contacts/organizer/domain/organizer.mapper';
-import { Email } from '@src/domains/contacts/shared/domain/value-objects/email';
 import { PrismaModule } from '@src/infrastructure/prisma/prisma.module';
 import { PrismaService } from '@src/infrastructure/prisma/prisma.service';
 import { EntityID } from '@src/libs/ddd';
 import { randomUUID } from 'crypto';
+import { None } from 'oxide.ts';
 import { OrganizerPrismaRepository } from '../../organizer.prisma.repository';
 
 describe('OrganizerPrismaRepository Integration Test', () => {
@@ -16,6 +19,21 @@ describe('OrganizerPrismaRepository Integration Test', () => {
   let prismaService: PrismaService;
   let existingBookerId: EntityID;
   let existingContactIds: EntityID[] = [];
+
+  const contactInfos: ContactInfos = ContactInfos.create({
+    emails: [Email.create('john.doe@mail.com').unwrap()],
+    phones: [],
+    website: None,
+    address: None,
+  }).unwrap();
+
+  const organizerProps: OrganizerProps = {
+    bookerId: randomUUID(),
+    name: 'John Doe',
+    type: OrganizerType.OTHER,
+    contactInfos: contactInfos,
+    contactIds: [],
+  };
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -77,12 +95,8 @@ describe('OrganizerPrismaRepository Integration Test', () => {
     it('should insert a new organizer', async () => {
       // Arrange
       const organizerResult = Organizer.create({
+        ...organizerProps,
         bookerId: existingBookerId,
-        name: 'Organizer Test',
-        type: OrganizerType.OTHER,
-        emails: [Email.create('john.doe@mail.com').unwrap()],
-        phones: ['+33612345678'],
-        contactIds: [],
       });
       const organizer = organizerResult.unwrap();
 
@@ -99,17 +113,14 @@ describe('OrganizerPrismaRepository Integration Test', () => {
       });
       expect(newOrganizer).toBeDefined();
       expect(newOrganizer?.id).toBe(organizer.id);
-      expect(newOrganizer?.name).toBe('Organizer Test');
+      expect(newOrganizer?.name).toBe(organizerProps.name);
     });
 
     it('should insert a new organizer and link contacts', async () => {
       // Arrange
       const organizerResult = Organizer.create({
+        ...organizerProps,
         bookerId: existingBookerId,
-        name: 'Organizer Test',
-        type: OrganizerType.OTHER,
-        emails: [Email.create('john.doe@mail.com').unwrap()],
-        phones: ['+33612345678'],
         contactIds: existingContactIds,
       });
       const organizer = organizerResult.unwrap();
@@ -128,19 +139,15 @@ describe('OrganizerPrismaRepository Integration Test', () => {
       });
       expect(newOrganizer).toBeDefined();
       expect(newOrganizer?.id).toBe(organizer.id);
-      expect(newOrganizer?.name).toBe('Organizer Test');
+      expect(newOrganizer?.name).toBe(organizerProps.name);
       expect(newOrganizer?.contacts).toHaveLength(2);
     });
 
     it('should update an existing organizer', async () => {
       // Arrange
       const organizer = Organizer.create({
+        ...organizerProps,
         bookerId: existingBookerId,
-        name: 'Organizer Test',
-        type: OrganizerType.OTHER,
-        emails: [Email.create('john.doe@mail.com').unwrap()],
-        phones: ['+33612345678'],
-        contactIds: [],
       }).unwrap();
       await organizerPrismaRepository.save(organizer);
 
@@ -170,12 +177,8 @@ describe('OrganizerPrismaRepository Integration Test', () => {
     it('should return true if organizer exists', async () => {
       // Arrange
       const organizer = Organizer.create({
+        ...organizerProps,
         bookerId: existingBookerId,
-        name: 'Organizer Test',
-        type: OrganizerType.OTHER,
-        emails: [Email.create('john.doe@mail.com').unwrap()],
-        phones: ['+33612345678'],
-        contactIds: [],
       }).unwrap();
       await organizerPrismaRepository.save(organizer);
 
@@ -203,12 +206,8 @@ describe('OrganizerPrismaRepository Integration Test', () => {
     it('should return an organizer if it exists', async () => {
       // Arrange
       const organizer = Organizer.create({
+        ...organizerProps,
         bookerId: existingBookerId,
-        name: 'Organizer Test',
-        type: OrganizerType.OTHER,
-        emails: [Email.create('john.doe@mail.com').unwrap()],
-        phones: ['+33612345678'],
-        contactIds: [],
       }).unwrap();
       await organizerPrismaRepository.save(organizer);
 
@@ -240,22 +239,15 @@ describe('OrganizerPrismaRepository Integration Test', () => {
     it('should return all organizers for a booker', async () => {
       // Arrange
       const organizer1 = Organizer.create({
+        ...organizerProps,
         bookerId: existingBookerId,
-        name: 'Organizer Test 1',
-        type: OrganizerType.OTHER,
-        emails: [Email.create('john.doe@mail.com').unwrap()],
-        phones: ['+33612345678'],
-        contactIds: [],
       }).unwrap();
       await organizerPrismaRepository.save(organizer1);
 
       const organizer2 = Organizer.create({
+        ...organizerProps,
+        name: 'Jane Doe',
         bookerId: existingBookerId,
-        name: 'Organizer Test 2',
-        type: OrganizerType.OTHER,
-        emails: [Email.create('john.doe@mail.com').unwrap()],
-        phones: ['+33612345678'],
-        contactIds: [],
       }).unwrap();
       await organizerPrismaRepository.save(organizer2);
 
@@ -263,12 +255,8 @@ describe('OrganizerPrismaRepository Integration Test', () => {
         data: { email: 'other.booker@mail.com' },
       });
       const otherOrganizer = Organizer.create({
+        ...organizerProps,
         bookerId: otherBooker.id,
-        name: 'Other Organizer Test',
-        type: OrganizerType.OTHER,
-        emails: [Email.create('john.doe@mail.com').unwrap()],
-        phones: ['+33612345678'],
-        contactIds: [],
       }).unwrap();
       await organizerPrismaRepository.save(otherOrganizer);
 

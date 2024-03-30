@@ -1,14 +1,12 @@
 import { Guard } from '@src/libs/core/guard';
 import { AggregateRoot, EntityID } from '@src/libs/ddd';
 import { Err, Ok, Result } from 'oxide.ts';
-import { Email } from '../../shared/domain/value-objects/email';
+import { ContactInfos } from '../../contact-infos/domain/contact-infos.entity';
 import { OrganizerCreatedEvent } from './events/organizer-created.event';
 import { OrganizerError } from './organizer.errors';
 
 export type OrganizerName = string;
 export type ContactIds = EntityID[];
-export type OrganizerEmails = Email[];
-export type OrganizerPhones = string[];
 
 export enum OrganizerType {
   CITY_HALL = 'CITY_HALL',
@@ -21,8 +19,7 @@ export interface OrganizerProps {
   bookerId: EntityID;
   name: OrganizerName;
   type: OrganizerType;
-  emails: OrganizerEmails;
-  phones: OrganizerPhones;
+  contactInfos: ContactInfos;
   contactIds: ContactIds;
 }
 
@@ -43,46 +40,8 @@ export class Organizer extends AggregateRoot<OrganizerProps> {
     return this.props.type;
   }
 
-  get emails(): OrganizerEmails {
-    return this.props.emails;
-  }
-
-  public addEmail(email: Email): void {
-    const emailExists = this.props.emails.some((existingEmail) => {
-      return existingEmail.equals(email);
-    });
-    if (emailExists) {
-      return;
-    }
-
-    this.props.emails.push(email);
-  }
-
-  public removeEmail(email: Email): void {
-    this.props.emails = this.props.emails.filter((existingEmail) => {
-      return !existingEmail.equals(email);
-    });
-  }
-
-  get phones(): OrganizerPhones {
-    return this.props.phones;
-  }
-
-  public addPhone(phone: string): void {
-    const phoneExists = this.props.phones.some((existingPhone) => {
-      return existingPhone === phone;
-    });
-    if (phoneExists) {
-      return;
-    }
-
-    this.props.phones.push(phone);
-  }
-
-  public removePhone(phone: string): void {
-    this.props.phones = this.props.phones.filter((existingPhone) => {
-      return existingPhone !== phone;
-    });
+  get contactInfos(): ContactInfos {
+    return this.props.contactInfos;
   }
 
   get contactIds(): ContactIds {
@@ -119,8 +78,6 @@ export class Organizer extends AggregateRoot<OrganizerProps> {
     const organizer = new Organizer(
       {
         ...props,
-        emails: props.emails ? props.emails : [],
-        phones: props.phones ? props.phones : [],
         contactIds: props.contactIds ? props.contactIds : [],
       },
       id,

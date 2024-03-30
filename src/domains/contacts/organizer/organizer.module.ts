@@ -1,6 +1,7 @@
 import { Module, Provider } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaModule } from '@src/infrastructure/prisma/prisma.module';
+import { ContactInfosModule } from '../contact-infos/contact-infos.module';
 import { CreateOrganizerService } from './application/commands/create-organizer/create-organizer.service';
 import { FindOrganizersForBookerQueryHandler } from './application/queries/find-organizers-for-booker/find-organizers-for-booker.handler';
 import { OrganizerMapper } from './domain/organizer.mapper';
@@ -19,7 +20,7 @@ const repositories: Provider[] = [
 ];
 
 @Module({
-  imports: [PrismaModule, CqrsModule],
+  imports: [PrismaModule, CqrsModule, ContactInfosModule],
   providers: [
     ...mappers,
     ...repositories,

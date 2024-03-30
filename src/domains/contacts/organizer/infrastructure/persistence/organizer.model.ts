@@ -1,13 +1,6 @@
-import { contactSchema } from '@src/domains/contacts/contact/infrastructure/persistence/contact.model';
+import { contactInfosSchema } from '@src/domains/contacts/contact-infos/infrastructure/persistence/contact-infos.model';
 import { z } from 'zod';
 import { OrganizerType } from '../../domain/organizer.entity';
-
-const emailSchema = z.object({
-  value: z.string().email(),
-});
-const phoneSchema = z.object({
-  value: z.string(),
-});
 
 export const organizerSchema = z.object({
   id: z.string().uuid(),
@@ -16,9 +9,8 @@ export const organizerSchema = z.object({
   updatedAt: z.preprocess((val: any) => new Date(val), z.date()).optional(),
   name: z.string(),
   type: z.nativeEnum(OrganizerType),
-  emails: z.array(emailSchema).optional(),
-  phones: z.array(phoneSchema).optional(),
-  contacts: z.array(contactSchema).optional(),
+  contactInfos: contactInfosSchema,
+  contactIds: z.array(z.string().uuid()),
 });
 
 export type OrganizerModel = z.infer<typeof organizerSchema>;
