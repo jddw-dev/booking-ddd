@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContactInfos } from '@src/domains/contacts/contact-infos/domain/contact-infos.entity';
+import { ContactInfosMapper } from '@src/domains/contacts/contact-infos/domain/contact-infos.mapper';
 import { Email } from '@src/domains/contacts/contact-infos/domain/value-objects/email';
 import {
   Organizer,
@@ -38,7 +39,11 @@ describe('OrganizerPrismaRepository Integration Test', () => {
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [PrismaModule],
-      providers: [OrganizerMapper, OrganizerPrismaRepository],
+      providers: [
+        OrganizerMapper,
+        OrganizerPrismaRepository,
+        ContactInfosMapper,
+      ],
     }).compile();
 
     organizerPrismaRepository = module.get<OrganizerPrismaRepository>(
@@ -52,24 +57,52 @@ describe('OrganizerPrismaRepository Integration Test', () => {
     });
     existingBookerId = booker.id;
 
-    const contactDatas = [
-      {
+    await prismaService.contact.create({
+      data: {
         firstName: 'Jérémy',
         lastName: 'Dutheil',
-        email: 'jeremy@booking-app.com',
-        bookerId: existingBookerId,
+        contactInfos: {
+          create: {
+            emails: {
+              create: [
+                {
+                  value: 'dutheil.jeremy@gmail.com',
+                },
+              ],
+            },
+          },
+        },
+        booker: {
+          connect: {
+            id: existingBookerId,
+          },
+        },
       },
+    });
 
-      {
+    await prismaService.contact.create({
+      data: {
         firstName: 'Aurélie',
         lastName: 'Cabarrot',
-        email: 'aurelie@booking-app.com',
-        bookerId: existingBookerId,
+        contactInfos: {
+          create: {
+            emails: {
+              create: [
+                {
+                  value: 'aurelie@booking-app.com',
+                },
+              ],
+            },
+          },
+        },
+        booker: {
+          connect: {
+            id: existingBookerId,
+          },
+        },
       },
-    ];
-    await prismaService.contact.createMany({
-      data: contactDatas,
     });
+
     const contacts = await prismaService.contact.findMany();
     existingContactIds = contacts.map((contact) => contact.id);
   });
@@ -78,20 +111,23 @@ describe('OrganizerPrismaRepository Integration Test', () => {
     const deleteBooker = prismaService.booker.deleteMany();
     const deleteContact = prismaService.contact.deleteMany();
     const deleteOrganizer = prismaService.organizer.deleteMany();
+    const deleteContactInfos = prismaService.contactInfos.deleteMany();
 
     await prismaService.$transaction([
       deleteBooker,
       deleteContact,
       deleteOrganizer,
+      deleteContactInfos,
     ]);
     await prismaService.$disconnect();
   });
 
-  describe('Save', () => {
-    afterEach(async () => {
-      await prismaService.organizer.deleteMany();
-    });
+  afterEach(async () => {
+    const deleteOrganizer = prismaService.organizer.deleteMany();
+    await prismaService.$transaction([deleteOrganizer]);
+  });
 
+  describe('Save', () => {
     it('should insert a new organizer', async () => {
       // Arrange
       const organizerResult = Organizer.create({
@@ -170,10 +206,6 @@ describe('OrganizerPrismaRepository Integration Test', () => {
   });
 
   describe('idExists', () => {
-    afterEach(async () => {
-      await prismaService.organizer.deleteMany();
-    });
-
     it('should return true if organizer exists', async () => {
       // Arrange
       const organizer = Organizer.create({
@@ -199,10 +231,6 @@ describe('OrganizerPrismaRepository Integration Test', () => {
   });
 
   describe('findOneById', () => {
-    afterEach(async () => {
-      await prismaService.organizer.deleteMany();
-    });
-
     it('should return an organizer if it exists', async () => {
       // Arrange
       const organizer = Organizer.create({
@@ -232,10 +260,6 @@ describe('OrganizerPrismaRepository Integration Test', () => {
   });
 
   describe('findAllForBooker', () => {
-    afterEach(async () => {
-      await prismaService.organizer.deleteMany();
-    });
-
     it('should return all organizers for a booker', async () => {
       // Arrange
       const organizer1 = Organizer.create({
@@ -248,6 +272,12 @@ describe('OrganizerPrismaRepository Integration Test', () => {
         ...organizerProps,
         name: 'Jane Doe',
         bookerId: existingBookerId,
+        contactInfos: ContactInfos.create({
+          emails: [Email.create('jane.doe@mail.com').unwrap()],
+          phones: [],
+          website: None,
+          address: None,
+        }).unwrap(),
       }).unwrap();
       await organizerPrismaRepository.save(organizer2);
 
@@ -257,6 +287,12 @@ describe('OrganizerPrismaRepository Integration Test', () => {
       const otherOrganizer = Organizer.create({
         ...organizerProps,
         bookerId: otherBooker.id,
+        contactInfos: ContactInfos.create({
+          emails: [Email.create('john.doe@mail.com').unwrap()],
+          phones: [],
+          website: None,
+          address: None,
+        }).unwrap(),
       }).unwrap();
       await organizerPrismaRepository.save(otherOrganizer);
 
